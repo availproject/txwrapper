@@ -7,11 +7,10 @@
  */ /** */
 import { KeyringPair } from '@polkadot/keyring/types';
 import { EXTRINSIC_VERSION } from '@polkadot/types/extrinsic/v4/Extrinsic';
-import { createMetadata, OptionsWithMeta } from '@substrate/txwrapper-polkadot';
-import fetch from 'node-fetch';
+import { createMetadata, OptionsWithMeta } from '@substrate/txwrapper-core';
 
 /**
- * Send a JSONRPC request to the node at http://0.0.0.0:9933.
+ * Send a JSONRPC request to the node at http://0.0.0.0:9944.
  *
  * @param method - The JSONRPC request method.
  * @param params - The JSONRPC request params.
@@ -20,7 +19,7 @@ export function rpcToLocalNode(
 	method: string,
 	params: any[] = [],
 ): Promise<any> {
-	return fetch('http://0.0.0.0:9933', {
+	return fetch('http://0.0.0.0:9944', {
 		body: JSON.stringify({
 			id: 1,
 			jsonrpc: '2.0',
@@ -56,10 +55,10 @@ export function signWith(
 	signingPayload: string,
 	options: OptionsWithMeta,
 ): `0x${string}` {
-	const { registry, metadataRpc } = options;
+	const { registry, metadataRpc, signedExtensions, userExtensions } = options;
 	// Important! The registry needs to be updated with latest metadata, so make
 	// sure to run `registry.setMetadata(metadata)` before signing.
-	registry.setMetadata(createMetadata(registry, metadataRpc));
+	registry.setMetadata(createMetadata(registry, metadataRpc), signedExtensions, userExtensions);
 
 	const { signature } = registry
 		.createType('ExtrinsicPayload', signingPayload, {

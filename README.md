@@ -1,3 +1,5 @@
-# txwrapper-template
+# avail-txwrapper
 
-This directory is a template for creating a chain specific txwrapper package, in the vein of `txwrapper-polkadot`. For guidance on how to use this template consult the [CHAIN_BUILDER.md guide](../../CHAIN_BUILDER.md)
+Tools for FRAME chain builders to publish chain specific offline transaction generation libraries forked for Avail.
+
+See the [official repo](https://github.com/paritytech/txwrapper-core)

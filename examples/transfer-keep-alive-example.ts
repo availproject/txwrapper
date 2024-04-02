@@ -7,8 +7,8 @@
 
 import { Keyring } from '@polkadot/api';
 import { cryptoWaitReady } from '@polkadot/util-crypto';
-
-import { construct, decode, deriveAddress, getRegistry, methods } from '../src';
+import { signedExtensions as availSignedExtensions } from 'avail-js-sdk';
+import { construct, decode, deriveAddress, getRegistry, methods, signedExtensionsList } from '../src';
 import { rpcToLocalNode, signWith } from './util';
 
 /**
@@ -21,9 +21,10 @@ async function main(): Promise<void> {
 	// Create a new keyring, and add an "Alice" account
 	const keyring = new Keyring();
 	const alice = keyring.addFromUri('//Alice', { name: 'Alice' }, 'sr25519');
+	const bob = keyring.addFromUri('//Bob', { name: 'Bob' }, 'sr25519');
 	console.log(
 		"Alice's SS58-Encoded Address:",
-		deriveAddress(alice.publicKey, 42), // TODO, use correct prefix
+		deriveAddress(alice.publicKey, 42),
 	);
 
 	// To construct the tx, we need some up-to-date information from the node.
@@ -33,30 +34,26 @@ async function main(): Promise<void> {
 	const blockHash = await rpcToLocalNode('chain_getBlockHash');
 	const genesisHash = await rpcToLocalNode('chain_getBlockHash', [0]);
 	const metadataRpc = await rpcToLocalNode('state_getMetadata');
-	const { specVersion, transactionVersion, specName } = await rpcToLocalNode(
+	const nonce = await rpcToLocalNode('system_accountNextIndex', [deriveAddress(alice.publicKey, 42)]);
+	const { specVersion, transactionVersion } = await rpcToLocalNode(
 		'state_getRuntimeVersion',
 	);
 
-	// Create [TODO CHAIN NAME] type registry.
-	const registry = getRegistry({
-		chainName: '[TODO]',
-		specName,
-		specVersion,
-		metadataRpc,
-	});
+	// Create type registry.
+	const registry = getRegistry({ metadataRpc });
 
 	// Now we can create our `balances.transfer` unsigned tx. The following
 	// function takes the above data as arguments, so can be performed offline
 	// if desired.
-	// TODO In this example we use the `transfer` method; feel free to pick a
+	// In this example we use the `transfer_keep_alive` method; feel free to pick a
 	// different method that illustrates using your chain.
-	const unsigned = methods.balances.transfer(
+	const unsigned = methods.balances.transferKeepAlive(
 		{
-			value: '90071992547409910',
-			dest: { id: '14E5nqKAp3oAJcmzgZhUD2RcptBeUBScxKHgJKU4HPNcKVf3' }, // Bob
+			value: '1000000000000000000',
+			dest: { id: deriveAddress(bob.publicKey, 42) }, // Bob
 		},
 		{
-			address: deriveAddress(alice.publicKey, 42), // TODO, use correct prefix
+			address: deriveAddress(alice.publicKey, 42),
 			blockHash,
 			blockNumber: registry
 				.createType('BlockNumber', block.header.number)
@@ -64,7 +61,7 @@ async function main(): Promise<void> {
 			eraPeriod: 64,
 			genesisHash,
 			metadataRpc,
-			nonce: 0, // Assuming this is Alice's first tx on the chain
+			nonce,
 			specVersion,
 			tip: 0,
 			transactionVersion,
@@ -72,39 +69,23 @@ async function main(): Promise<void> {
 		{
 			metadataRpc,
 			registry,
+			signedExtensions: signedExtensionsList,
+			userExtensions: availSignedExtensions
 		},
 	);
 
-	// Decode an unsigned transaction.
-	const decodedUnsigned = decode(unsigned, {
-		metadataRpc,
-		registry,
-	});
-	console.log(
-		// TODO all the log messages need to be updated to be relevant to the method used
-		`\nDecoded Transaction\n  To: ${decodedUnsigned.method.args.dest}\n` +
-			`  Amount: ${decodedUnsigned.method.args.value}`,
-	);
-
 	// Construct the signing payload from an unsigned transaction.
-	const signingPayload = construct.signingPayload(unsigned, { registry });
+	// Here, specifying the app_id is really important for the transaction to work.
+	// Using an app_id different than 0 for default substrate transaction won't work either.
+	const signingPayload = registry.createType('ExtrinsicPayload', { ...unsigned, app_id: 0 }, { version: unsigned.version }).toHex()
 	console.log(`\nPayload to Sign: ${signingPayload}`);
-
-	// Decode the information from a signing payload.
-	const payloadInfo = decode(signingPayload, {
-		metadataRpc,
-		registry,
-	});
-	console.log(
-		// TODO all the log messages need to be updated to be relevant to the method used
-		`\nDecoded Transaction\n  To: ${payloadInfo.method.args.dest}\n` +
-			`  Amount: ${payloadInfo.method.args.value}`,
-	);
 
 	// Sign a payload. This operation should be performed on an offline device.
 	const signature = signWith(alice, signingPayload, {
 		metadataRpc,
 		registry,
+		signedExtensions: signedExtensionsList,
+		userExtensions: availSignedExtensions
 	});
 	console.log(`\nSignature: ${signature}`);
 
@@ -112,6 +93,8 @@ async function main(): Promise<void> {
 	const tx = construct.signedTx(unsigned, signature, {
 		metadataRpc,
 		registry,
+		signedExtensions: signedExtensionsList,
+		userExtensions: availSignedExtensions
 	});
 	console.log(`\nTransaction to Submit: ${tx}`);
 
@@ -124,17 +107,7 @@ async function main(): Promise<void> {
 	// request directly to the node.
 	const actualTxHash = await rpcToLocalNode('author_submitExtrinsic', [tx]);
 	console.log(`Actual Tx Hash: ${actualTxHash}`);
-
-	// Decode a signed payload.
-	const txInfo = decode(tx, {
-		metadataRpc,
-		registry,
-	});
-	console.log(
-		// TODO all the log messages need to be updated to be relevant to the method used
-		`\nDecoded Transaction\n  To: ${txInfo.method.args.dest}\n` +
-			`  Amount: ${txInfo.method.args.value}\n`,
-	);
+	process.exit(0)
 }
 
 main().catch((error) => {

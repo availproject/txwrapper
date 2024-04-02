@@ -8,7 +8,7 @@
 import { Keyring } from '@polkadot/api';
 import { cryptoWaitReady } from '@polkadot/util-crypto';
 import { signedExtensions as availSignedExtensions } from 'avail-js-sdk';
-import { construct, decode, deriveAddress, getRegistry, methods, signedExtensionsList } from '../src';
+import { construct, deriveAddress, getRegistry, methods, signedExtensionsList } from '../src';
 import { rpcToLocalNode, signWith } from './util';
 
 /**

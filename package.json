@@ -1,6 +1,6 @@
 {
   "name": "avail-txwrapper",
-  "version": "7.3.0",
+  "version": "0.1.0",
   "author": "Ghali Leouarz",
   "description": "Helper functions for Avail offline transaction generation.",
   "files": [
@@ -19,7 +19,8 @@
     "node": ">=14"
   },
   "scripts": {
-    "build": "tsc"
+    "build": "tsc",
+    "publish-avail": "npm run build && npm publish"
   },
   "dependencies": {
     "@substrate/txwrapper-core": "^7.3.0",

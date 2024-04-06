@@ -19,6 +19,7 @@ export function rpcToLocalNode(
 	method: string,
 	params: any[] = [],
 ): Promise<any> {
+	// Assume we have a local node
 	return fetch('http://0.0.0.0:9944', {
 		body: JSON.stringify({
 			id: 1,

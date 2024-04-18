@@ -1,6 +1,6 @@
 {
   "name": "avail-txwrapper",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "author": "Ghali Leouarz",
   "description": "Helper functions for Avail offline transaction generation.",
   "files": [

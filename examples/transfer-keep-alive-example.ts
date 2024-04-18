@@ -8,12 +8,17 @@
 import { Keyring } from '@polkadot/api';
 import { cryptoWaitReady } from '@polkadot/util-crypto';
 import { signedExtensions as availSignedExtensions } from 'avail-js-sdk';
-import { construct, deriveAddress, getRegistry, methods, signedExtensionsList } from '../src';
+import { UnsignedTransaction, construct, decodeAvail, deriveAddress, getRegistry, methods, signedExtensionsList } from '../src';
 import { rpcToLocalNode, signWith } from './util';
 
+export interface AvailUnsignedTransaction extends UnsignedTransaction {
+	// The app id used to send a transaction 
+	app_id?: number;
+}
+
 /**
- * Entry point of the script. This script assumes a [TODO CHAIN NAME] node is running
- * locally on `http://0.0.0.0:9933`.
+ * Entry point of the script. This script assumes an Avail node is running
+ * locally on `http://0.0.0.0:9944`.
  */
 async function main(): Promise<void> {
 	// Wait for the promise to resolve async WASM
@@ -47,7 +52,7 @@ async function main(): Promise<void> {
 	// if desired.
 	// In this example we use the `transfer_keep_alive` method; feel free to pick a
 	// different method that illustrates using your chain.
-	const unsigned = methods.balances.transferKeepAlive(
+	const unsigned: AvailUnsignedTransaction = methods.balances.transferKeepAlive(
 		{
 			value: '1000000000000000000',
 			dest: { id: deriveAddress(bob.publicKey, 42) }, // Bob
@@ -74,11 +79,39 @@ async function main(): Promise<void> {
 		},
 	);
 
+	// Set the app_id
+	unsigned.app_id = 0
+
+	// Decode an unsigned transaction.
+	const decodedUnsigned = decodeAvail(unsigned, {
+		metadataRpc,
+		registry,
+		signedExtensions: signedExtensionsList,
+		userExtensions: availSignedExtensions
+	});
+	console.log(
+		`\nDecoded Transaction\n  To: ${JSON.stringify(decodedUnsigned.method.args.dest)}\n` +
+		`  Amount: ${decodedUnsigned.method.args.value}`,
+	);
+
 	// Construct the signing payload from an unsigned transaction.
 	// Here, specifying the app_id is really important for the transaction to work.
 	// Using an app_id different than 0 for default substrate transaction won't work either.
-	const signingPayload = registry.createType('ExtrinsicPayload', { ...unsigned, app_id: 0 }, { version: unsigned.version }).toHex()
+	const signingPayload = registry.createType('ExtrinsicPayload', unsigned, { version: unsigned.version }).toHex()
 	console.log(`\nPayload to Sign: ${signingPayload}`);
+
+
+	// Decode the information from a signing payload.
+	const payloadInfo = decodeAvail(signingPayload, {
+		metadataRpc,
+		registry,
+		signedExtensions: signedExtensionsList,
+		userExtensions: availSignedExtensions
+	});
+	console.log(
+		`\nDecoded Transaction\n  To: ${JSON.stringify(payloadInfo.method.args.dest)}\n` +
+		`  Amount: ${payloadInfo.method.args.value}`,
+	);
 
 	// Sign a payload. This operation should be performed on an offline device.
 	const signature = signWith(alice, signingPayload, {
@@ -107,6 +140,19 @@ async function main(): Promise<void> {
 	// request directly to the node.
 	const actualTxHash = await rpcToLocalNode('author_submitExtrinsic', [tx]);
 	console.log(`Actual Tx Hash: ${actualTxHash}`);
+
+	// Decode a signed payload.
+	const txInfo = decodeAvail(tx, {
+		metadataRpc,
+		registry,
+		signedExtensions: signedExtensionsList,
+		userExtensions: availSignedExtensions
+	});
+	console.log(
+		`\nDecoded Transaction\n  To: ${JSON.stringify(txInfo.method.args.dest)}\n` +
+		`  Amount: ${txInfo.method.args.value}\n`,
+	);
+
 	process.exit(0)
 }
 

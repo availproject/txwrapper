@@ -14,6 +14,9 @@ export const methods = {
 	utility: substrateMethods.utility,
 };
 
+// Export Avail custom decode function
+export { decode as decodeAvail } from './decode';
+
 // Rexport all of txwrapper-core so users have access to utilities, construct functions,
 // decode function, and types.
 export * from '@substrate/txwrapper-core';
@@ -38,6 +41,8 @@ export function getRegistry({ metadataRpc }: any): TypeRegistry {
 			tokenSymbol: 'AVAIL', // For Goldberg, use 'AVL'.
 		},
 		specTypes: availTypes, // For Goldberg network, import and use 'goldbergTypes' from avail-js-sdk.
+		signedExtensions: signedExtensionsList,
+		userExtensions: availSignedExtensions,
 		metadataRpc,
 	});
 	registry.setSignedExtensions(signedExtensionsList, availSignedExtensions)

@@ -25,7 +25,7 @@
   "dependencies": {
     "@substrate/txwrapper-core": "^7.3.0",
     "@substrate/txwrapper-substrate": "^7.3.0",
-    "avail-js-sdk": "^0.2.11"
+    "avail-js-sdk": "^0.2.12"
   },
   "devDependencies": {
     "ts-node": "^10.9.2",

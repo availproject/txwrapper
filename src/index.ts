@@ -38,9 +38,9 @@ export function getRegistry({ metadataRpc }: any): TypeRegistry {
 		chainProperties: {
 			ss58Format: 42,
 			tokenDecimals: 18,
-			tokenSymbol: 'AVAIL', // For Goldberg, use 'AVL'.
+			tokenSymbol: 'AVAIL',
 		},
-		specTypes: availTypes, // For Goldberg network, import and use 'goldbergTypes' from avail-js-sdk.
+		specTypes: availTypes,
 		signedExtensions: signedExtensionsList,
 		userExtensions: availSignedExtensions,
 		metadataRpc,
